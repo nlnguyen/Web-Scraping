@@ -15,7 +15,7 @@ from requests import ConnectionError
 from bs4 import BeautifulSoup
 from bs4 import SoupStrainer
 import MySQLdb
-from pattern.web import URL
+import sys
 
 
 #===========================================================================================
@@ -31,19 +31,31 @@ def Insert2DB(recordList):
     # Open DB connection to insert the list of records
     db = MySQLdb.connect("localhost", "testuser", "test123", "weblinks")
     if db is not None:
-        with db: # the 'with' keyword provides error handling and permits
-                 # the python interpreter to release automatically resources
+        with db:    # the 'with' keyword provides error handling and permits
+                    # the python interpreter to release automatically resources
             
             # Prepare a cursor object using cursor() method
             cursor = db.cursor();
         
-            # execute the sql command
-            sqlCmd = "INSERT INTO webs1 (title, url, meta, description) VALUES(%s, %s, %s, %s)"
-            cursor.executemany(sqlCmd, recordList)
+            # determine the maximum buffer size (in byte) for bulk insert 
+            sqlCmd = "SELECT @@bulk_insert_buffer_size;"
+            cursor.execute(sqlCmd)
+            bufferSize = cursor.fetchone()
+            bufferSize = int(bufferSize[0])
+
+            # determine each tuple size (in byte)
+            tupleSize = sys.getsizeof(recordList[0])
             
-            # commit the changes in the DB
-            db.commit()
-    
+            # determine the maximum number of tuples per batch
+            nbTuplePerBatch = bufferSize / tupleSize
+        
+            # bulk insertion of tuples (per batch)
+            sqlCmd = "INSERT INTO webs1 (title, url, meta, description) VALUES(%s, %s, %s, %s)"
+            for i in range(0, len(recordList), nbTuplePerBatch):
+                batchList = recordList[i:i+nbTuplePerBatch]
+                cursor.executemany(sqlCmd, batchList)
+                db.commit() # commit the changes in the DB
+        
         # Disconnect from Server
         db.close();
     else:
@@ -68,7 +80,7 @@ def crawlAll(url, maxLevels, linksList):
     # Defer downloading the response's body until response.content is accessed
     try:
         response = requests.get(url, stream=True)
-    except ConnectionError as e:
+    except ConnectionError:
         print ("ConnectionError for url: %s" %url)
         return fail
         
@@ -117,15 +129,14 @@ def crawlAll(url, maxLevels, linksList):
 #
 # MAIN PROGRAM
 #        
-    
+
 fail, success, recnum = False, True, 0
 linksList = []
+testURL = 'http://www.lapresse.ca/'
+# apdfURL = 'http://www.emis.de/journals/IJOPCM/files/IJOPCM(vol.1.2.3.S.8).pdf'
 
 # Crawl the initial url and save all the links found to a list
-testURL1 = 'https://en.wikipedia.org/wiki/Computer_virus'
-testURL2 = 'http://www.lapresse.ca/' 
-# apdfURL = 'http://www.emis.de/journals/IJOPCM/files/IJOPCM(vol.1.2.3.S.8).pdf'
-crawlres = crawlAll(testURL2, 2, linksList)
+crawlres = crawlAll(testURL, 2, linksList)
 
 
 # Save the list found into DB
@@ -133,4 +144,4 @@ if crawlres==success:
     Insert2DB(linksList)
     print "%d records have been inserted into %s table." % (len(linksList), 'webs1')
 else:
-    print "unable to scrape the specified initial link: %d" % testURL2
+    print "unable to scrape the specified initial link: %d" % testURL
