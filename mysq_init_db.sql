@@ -9,13 +9,13 @@ GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP
    TO 'testuser'@'localhost';
 
 /*
-   create a table having 4 fields (title, url, meta and description)
+   create a table having 4 fields (title, url, keywds and description)
    to store http links
 */
 CREATE TABLE webs1 (
 	title	varchar(512),
 	url	varchar(1024),
-	meta	varchar(1024),
+	keywds	varchar(1024),
 	description varchar(512)
 );
 

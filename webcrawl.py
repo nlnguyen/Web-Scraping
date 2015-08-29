@@ -50,7 +50,7 @@ def Insert2DB(recordList):
             nbTuplePerBatch = bufferSize / tupleSize
         
             # bulk insertion of tuples (per batch)
-            sqlCmd = "INSERT INTO webs1 (title, url, meta, description) VALUES(%s, %s, %s, %s)"
+            sqlCmd = "INSERT INTO webs1 (title, url, keywds, description) VALUES(%s, %s, %s, %s)"
             for i in range(0, len(recordList), nbTuplePerBatch):
                 batchList = recordList[i:i+nbTuplePerBatch]
                 cursor.executemany(sqlCmd, batchList)
@@ -90,18 +90,26 @@ def crawlAll(url, maxLevels, linksList):
     # Scrape the website
     only_head_tag = SoupStrainer('head')
     soup = BeautifulSoup(response.text, "html.parser", parse_only=only_head_tag)
+    
+    # ...retrieve the title
     if soup.title is not None:
         pageTitle = unicode(soup.title.string)
     else:
         # TODO: INSERT CASE TO EXTRACT THE TITLE FROM PDF LINKS!!!
         pageTitle = 'emptyTitle!'
+        
+    # ...retrieve the description
+    description = soup.find('meta', {'name':'description'})['content']
+    
+    # ...retrieve keywords
+    keywords = soup.find('meta', {'name':'keywords'})['content']
 
-    # Record this link
+    # Record all the infos relative to this link
     url_utf8 = url.encode('utf-8')
     title_utf8 = TrimString(pageTitle).encode('utf-8')
-    meta_utf8 = 'metadata_go_here'
-    desc_utf8 = 'description_go_here'
-    currentPage = (title_utf8, url_utf8, meta_utf8, desc_utf8)
+    keyw_utf8 = keywords.encode('utf-8')
+    desc_utf8 = description.encode('utf-8')
+    currentPage = (title_utf8, url_utf8, keyw_utf8, desc_utf8)
     
     # Test for empty list and existing links and eventually save the extracted infos to the list
     if not linksList or not any(url_utf8 in d for d in linksList):
@@ -134,6 +142,7 @@ fail, success, recnum = False, True, 0
 linksList = []
 testURL = 'http://www.lapresse.ca/'
 # apdfURL = 'http://www.emis.de/journals/IJOPCM/files/IJOPCM(vol.1.2.3.S.8).pdf'
+
 
 # Crawl the initial url and save all the links found to a list
 crawlres = crawlAll(testURL, 2, linksList)
