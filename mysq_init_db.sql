@@ -1,12 +1,5 @@
--- create the weblinks database and set it as the current DB
-CREATE DATABASE weblinks;
 USE weblinks;
-
--- create a user with its privileges
-CREATE USER 'testuser'@'localhost' IDENTIFIED BY 'test123';
-GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP
-   ON weblinks.*
-   TO 'testuser'@'localhost';
+DROP TABLE IF EXISTS webs1;
 
 /*
    create a table having 4 fields (title, url, keywds and description)
@@ -16,7 +9,7 @@ CREATE TABLE webs1 (
 	title	varchar(512),
 	url	varchar(1024),
 	keywds	varchar(1024),
-	description varchar(512)
+	description varchar(1024)
 );
 
 /*

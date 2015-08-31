@@ -4,7 +4,7 @@
     DESCRIPTION: This program crawl and save web links into a database for further analysis
     
     Created:    Jul 17, 2015
-    Modified:   Aug 21, 2015
+    Modified:   Aug 31, 2015
 
     authors:    Nguyen Ngoc Lan
                 Tran Thanh Liem
@@ -99,16 +99,24 @@ def crawlAll(url, maxLevels, linksList):
         pageTitle = 'emptyTitle!'
         
     # ...retrieve the description
-    description = soup.find('meta', {'name':'description'})['content']
+    description = soup.find('meta', {'name':'description'})
+    if description is not None:
+        description = description['content']
+    else:
+        description = 'not any description available for this page'
     
     # ...retrieve keywords
-    keywords = soup.find('meta', {'name':'keywords'})['content']
+    keywords = soup.find('meta', {'name':'keywords'})
+    if keywords is not None:
+        keywords = keywords['content']
+    else:
+        keywords = 'not any keywords available for this page'
 
     # Record all the infos relative to this link
     url_utf8 = url.encode('utf-8')
     title_utf8 = TrimString(pageTitle).encode('utf-8')
-    keyw_utf8 = keywords.encode('utf-8')
-    desc_utf8 = description.encode('utf-8')
+    keyw_utf8 = TrimString(keywords).encode('utf-8')
+    desc_utf8 = TrimString(description).encode('utf-8')
     currentPage = (title_utf8, url_utf8, keyw_utf8, desc_utf8)
     
     # Test for empty list and existing links and eventually save the extracted infos to the list
